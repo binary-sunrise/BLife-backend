@@ -1,37 +1,52 @@
-.PHONY: db-start db-stop db-migrate db-seed db-reset db-studio docker-build docker-run help
+.PHONY: help install dev start test lint format typecheck migrate upgrade seed worker docker-up docker-down
 
 help:
-	@echo "Available database & deployment commands:"
-	@echo "  make db-start     - Start PostgreSQL database container with health checks"
-	@echo "  make db-stop      - Stop PostgreSQL database container"
-	@echo "  make db-migrate   - Run all pending database migrations"
-	@echo "  make db-seed      - Populate database with initial seed data"
-	@echo "  make db-reset     - Reset database, re-apply migrations, and seed"
-	@echo "  make db-studio    - Open Prisma Studio database UI"
-	@echo "  make docker-build - Build production multi-stage Docker image"
-	@echo "  make docker-run   - Run containerized application locally on port 3000"
+	@echo "B-Liffe FastAPI Backend Management:"
+	@echo "  make install     - Install all project dependencies with uv"
+	@echo "  make dev         - Run development server with auto-reload (port 3000)"
+	@echo "  make start       - Run production Gunicorn with Uvicorn workers"
+	@echo "  make test        - Run test suite with pytest"
+	@echo "  make lint        - Run Ruff linter"
+	@echo "  make format      - Format code with Ruff"
+	@echo "  make typecheck   - Run mypy type checking"
+	@echo "  make upgrade     - Apply database migrations with Alembic"
+	@echo "  make seed        - Populate database with initial seed data"
+	@echo "  make worker      - Start ARQ background worker"
+	@echo "  make docker-up   - Run full stack (api, worker, redis) via Docker Compose"
+	@echo "  make docker-down - Stop Docker Compose stack"
 
-db-start:
-	docker compose up -d postgres
+install:
+	uv sync
 
-db-stop:
+dev:
+	uv run uvicorn app.main:app --host 0.0.0.0 --port 3000 --reload
+
+start:
+	uv run gunicorn -k uvicorn.workers.UvicornWorker -w 4 -b 0.0.0.0:3000 app.main:app
+
+test:
+	uv run pytest
+
+lint:
+	uv run ruff check .
+
+format:
+	uv run ruff format .
+
+typecheck:
+	uv run mypy app
+
+upgrade:
+	uv run alembic upgrade head
+
+seed:
+	uv run python -m app.db.seed
+
+worker:
+	uv run arq app.tasks.worker.WorkerSettings
+
+docker-up:
+	docker compose up -d
+
+docker-down:
 	docker compose down
-
-db-migrate:
-	npx prisma migrate deploy
-
-db-seed:
-	npx tsx prisma/seed.ts
-
-db-reset:
-	npx prisma migrate reset --force
-
-db-studio:
-	npx prisma studio
-
-docker-build:
-	docker build -t lookaround-backend:latest .
-
-docker-run:
-	docker run --rm -it -p 3000:3000 --env-file .env lookaround-backend:latest
-

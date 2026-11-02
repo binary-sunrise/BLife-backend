@@ -8,8 +8,12 @@ services:
     healthCheckPath: /health
     autoDeploy: true
     envVars:
-      - key: NODE_ENV
+      - key: ENVIRONMENT
         value: production
+      - key: PORT
+        value: "3000"
+      - key: HOST
+        value: "0.0.0.0"
       - key: DATABASE_SSL
         value: "true"
       - key: DATABASE_SSL_REJECT_UNAUTHORIZED
@@ -20,6 +24,8 @@ services:
         value: "false"
       # The following must be supplied in Render Dashboard:
       - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
         sync: false
       - key: BETTER_AUTH_URL
         sync: false

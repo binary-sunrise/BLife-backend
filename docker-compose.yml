@@ -1,30 +1,61 @@
 services:
-  postgres:
-    image: postgres:16-alpine
-    container_name: lookaround-postgres
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bliffe-api
     restart: unless-stopped
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER:-postgres}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      POSTGRES_DB: ${POSTGRES_DB:-lookaround_db}
-      PGDATA: /var/lib/postgresql/data/pgdata
     ports:
-      - "${DB_PORT:-5433}:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-lookaround_db}"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-      start_period: 5s
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      - HOST=0.0.0.0
+      - PORT=3000
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      redis:
+        condition: service_healthy
     networks:
-      - lookaround-net
+      - bliffe-net
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bliffe-worker
+    restart: unless-stopped
+    command: ["arq", "app.tasks.worker.WorkerSettings"]
+    env_file:
+      - .env
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - bliffe-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: bliffe-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - bliffe-net
 
 volumes:
-  postgres_data:
+  redis_data:
     driver: local
 
 networks:
-  lookaround-net:
+  bliffe-net:
     driver: bridge

@@ -1,37 +1,37 @@
-# Version control & git
+# Version control
 .git
 .gitignore
 
-# Dependencies & build outputs
-node_modules
-dist
-coverage
+# Python caches and virtual environments
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.venv
+.mypy_cache
+.pytest_cache
+.ruff_cache
+.coverage
+htmlcov
 
-# Environment & secrets (never leak credentials into Docker image layers)
+# Environment and secrets
 .env
 .env.*
 !.env.example
-!.env.production.example
 
-# Local development and docker-compose files
+# Local compose and make
 docker-compose*.yml
 Makefile
 
-# Test suites & artifacts
-test
-*.test.ts
-*.spec.ts
+# Tests and documentation
+tests
+*.md
 
-# IDE and Editor configurations
+# IDEs
 .vscode
 .idea
 *.swp
 *.swo
 
-# System and logs
+# Logs
 *.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.DS_Store
-Thumbs.db
