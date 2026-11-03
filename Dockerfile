@@ -24,6 +24,7 @@ COPY app ./app
 COPY alembic ./alembic
 COPY alembic.ini ./
 COPY certs ./certs
+COPY README.md ./
 
 # Sync the root project in non-editable production mode
 RUN --mount=type=cache,target=/root/.cache/uv \
