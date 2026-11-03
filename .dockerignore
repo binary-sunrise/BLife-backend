@@ -26,6 +26,7 @@ Makefile
 # Tests and documentation
 tests
 *.md
+!README.md
 
 # IDEs
 .vscode
