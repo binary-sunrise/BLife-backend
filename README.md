@@ -8,12 +8,14 @@ Built with **FastAPI**, **SQLAlchemy 2.0 Async**, **PostgreSQL** (`asyncpg`), **
 
 ## 🚀 Quick EC2 Deployment & Container Startup
 
-Your live EC2 server is at **`54.252.66.130`** (using key `certs/bliffe-key.pem`).
+Your live EC2 server is at **`54.252.66.130`** (using key `d:\Veena\KFRI\B-Liffe_Backend\certs\bliffe-key.pem`).
 
 ### 1. Connect to EC2 from Windows PowerShell
+Run this command from any directory (uses the full path so it always finds the key):
 ```powershell
-ssh -i "certs\bliffe-key.pem" ubuntu@54.252.66.130
+ssh -i "d:\Veena\KFRI\B-Liffe_Backend\certs\bliffe-key.pem" ubuntu@54.252.66.130
 ```
+*(Or navigate to the project root first with `cd d:\Veena\KFRI\B-Liffe_Backend` and run `ssh -i "certs\bliffe-key.pem" ubuntu@54.252.66.130`).*
 
 ### 2. One-Line Container Startup (inside EC2)
 Inside your EC2 terminal, run:
