@@ -132,6 +132,11 @@ def create_app() -> FastAPI:
                 "export": {
                     "darwinCore": "GET /api/export/dwc",
                 },
+                "media": {
+                    "upload": "POST /api/media/upload",
+                    "presignedUrl": "POST /api/media/presigned-url",
+                    "status": "GET /api/media/status",
+                },
             },
         }
 

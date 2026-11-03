@@ -54,10 +54,27 @@ class Settings(BaseSettings):
     # Redis & ARQ Background Worker
     REDIS_URL: str = "redis://localhost:6379/0"
 
+    # Amazon S3 / Object Storage (Free Tier)
+    AWS_ACCESS_KEY_ID: str | None = None
+    AWS_SECRET_ACCESS_KEY: str | None = None
+    AWS_REGION: str = "ap-south-1"
+    AWS_S3_BUCKET: str = "bliffe-media"
+    AWS_S3_ENDPOINT_URL: str | None = None
+    AWS_S3_PUBLIC_URL_PREFIX: str | None = None
+
     # Observability & OpenTelemetry
     OTEL_ENABLED: bool = True
     OTEL_EXPORTER_OTLP_ENDPOINT: str | None = None
     OTEL_SERVICE_NAME: str = "b-liffe-backend"
+
+    @property
+    def s3_base_url(self) -> str:
+        """Returns the public base URL for objects in the S3 bucket."""
+        if self.AWS_S3_PUBLIC_URL_PREFIX:
+            return self.AWS_S3_PUBLIC_URL_PREFIX.rstrip("/")
+        if self.AWS_REGION == "us-east-1":
+            return f"https://{self.AWS_S3_BUCKET}.s3.amazonaws.com"
+        return f"https://{self.AWS_S3_BUCKET}.s3.{self.AWS_REGION}.amazonaws.com"
 
     @property
     def cors_origins(self) -> list[str]:

@@ -23,6 +23,7 @@ from app.schemas.user import (
     RegisterInputSchema,
     UserProfileSchema,
 )
+from app.services.s3_service import S3StorageService
 
 DEFAULT_MOCK_PROFILE = UserProfileSchema(
     id="bliffe-demo-user",
@@ -255,6 +256,11 @@ class AuthService:
         avatar_custom_url = (
             input_data.avatarCustomUrl if input_data.avatarType == "upload" else None
         )
+        if avatar_custom_url:
+            s3_service = S3StorageService()
+            avatar_custom_url = s3_service.upload_base64_if_needed(
+                avatar_custom_url, folder="avatars"
+            )
 
         if profile:
             profile.fullName = trimmed_full_name

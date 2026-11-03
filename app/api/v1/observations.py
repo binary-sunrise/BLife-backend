@@ -15,6 +15,7 @@ from app.schemas.observation import (
     ObservationSchema,
     UpdateObservationSchema,
 )
+from app.services.s3_service import S3StorageService
 from app.services.sync_service import SyncService
 
 router = APIRouter(tags=["Observations"])
@@ -124,7 +125,9 @@ async def create_observation(
     )
 
     obs_id = input_data.id or generate_uuid()
-    photos = input_data.photos or ([input_data.photo] if input_data.photo else [])
+    raw_photos = input_data.photos or ([input_data.photo] if input_data.photo else [])
+    s3_service = S3StorageService()
+    photos = s3_service.upload_batch_base64_if_needed(raw_photos, folder="observations")
     project_ids = input_data.projectIds or ([rels["projectId"]] if rels["projectId"] else [])
     now_iso = datetime.now(UTC).isoformat()
 
@@ -255,9 +258,15 @@ async def update_observation(
     if input_data.accuracyMeters is not None:
         obs.accuracyMeters = input_data.accuracyMeters
     if input_data.photos is not None:
-        obs.photos = input_data.photos
+        s3_service = S3StorageService()
+        obs.photos = s3_service.upload_batch_base64_if_needed(
+            input_data.photos, folder="observations"
+        )
     elif input_data.photo is not None:
-        obs.photos = [input_data.photo]
+        s3_service = S3StorageService()
+        obs.photos = s3_service.upload_batch_base64_if_needed(
+            [input_data.photo], folder="observations"
+        )
     if input_data.verificationStatus is not None:
         obs.verificationStatus = input_data.verificationStatus
     if input_data.verifiedBy is not None:
@@ -312,6 +321,10 @@ async def batch_upsert_observations(request: Request, session: SessionDep) -> di
             observation_at=parsed.observationAt,
         )
 
+        s3_service = S3StorageService()
+        raw_photos = parsed.photos or ([parsed.photo] if parsed.photo else [])
+        clean_photos = s3_service.upload_batch_base64_if_needed(raw_photos, folder="observations")
+
         existing = await session.get(BLiffeObservation, oid)
         if existing:
             existing.speciesName = parsed.speciesName.strip()
@@ -322,6 +335,8 @@ async def batch_upsert_observations(request: Request, session: SessionDep) -> di
             existing.tags = parsed.tags or []
             existing.latitude = parsed.latitude
             existing.longitude = parsed.longitude
+            if clean_photos:
+                existing.photos = clean_photos
             existing.syncStatus = "synced"
         else:
             now_iso = datetime.now(UTC).isoformat()
@@ -367,7 +382,7 @@ async def batch_upsert_observations(request: Request, session: SessionDep) -> di
                 accuracyMeters=parsed.accuracyMeters,
                 observationAt=parsed.observationAt or now_iso,
                 recordedAt=parsed.recordedAt or now_iso,
-                photos=parsed.photos or ([parsed.photo] if parsed.photo else []),
+                photos=clean_photos,
                 verificationStatus=parsed.verificationStatus or "Unreviewed",
                 verifiedBy=parsed.verifiedBy.strip() if parsed.verifiedBy else "",
                 verificationNotes=parsed.verificationNotes.strip()

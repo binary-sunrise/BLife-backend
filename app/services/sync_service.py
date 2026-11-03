@@ -18,6 +18,7 @@ from app.schemas.sync import (
     SyncStatusResponseSchema,
     SyncSyncedCounts,
 )
+from app.services.s3_service import S3StorageService
 from app.services.ward_service import TVM_WARDS
 
 
@@ -264,6 +265,10 @@ class SyncService:
                 observation_at=o.observationAt,
             )
 
+            s3_service = S3StorageService()
+            raw_photos = o.photos or ([o.photo] if o.photo else [])
+            clean_photos = s3_service.upload_batch_base64_if_needed(raw_photos, folder="observations")
+
             existing_o = await self.session.get(BLiffeObservation, oid)
             if existing_o:
                 existing_o.speciesName = o.speciesName.strip()
@@ -274,6 +279,8 @@ class SyncService:
                 existing_o.tags = o.tags
                 existing_o.latitude = o.latitude
                 existing_o.longitude = o.longitude
+                if clean_photos:
+                    existing_o.photos = clean_photos
                 existing_o.syncStatus = "synced"
             else:
                 now_iso = datetime.now(UTC).isoformat()
@@ -315,7 +322,7 @@ class SyncService:
                     accuracyMeters=o.accuracyMeters,
                     observationAt=o.observationAt or now_iso,
                     recordedAt=o.recordedAt or now_iso,
-                    photos=o.photos or ([o.photo] if o.photo else []),
+                    photos=clean_photos,
                     verificationStatus=o.verificationStatus or "Unreviewed",
                     verifiedBy=o.verifiedBy.strip() if o.verifiedBy else "",
                     verificationNotes=o.verificationNotes.strip() if o.verificationNotes else "",

@@ -4,6 +4,7 @@ from fastapi import APIRouter
 
 from app.api.v1.auth import router as auth_router
 from app.api.v1.export import router as export_router
+from app.api.v1.media import router as media_router
 from app.api.v1.observations import router as observations_router
 from app.api.v1.profile import router as profile_router
 from app.api.v1.projects import router as projects_router
@@ -22,6 +23,7 @@ api_v1_router.include_router(surveys_router, prefix="/surveys")
 api_v1_router.include_router(observations_router, prefix="/observations")
 api_v1_router.include_router(sync_router, prefix="/sync")
 api_v1_router.include_router(export_router, prefix="/export")
+api_v1_router.include_router(media_router, prefix="/media")
 
 # Hierarchical route aliases matching B-Liffe frontend navigation URLs
 api_v1_router.include_router(

@@ -118,6 +118,28 @@ curl.exe -i https://bliffe-api.duckdns.org/health
 
 ---
 
+## 🪣 Amazon S3 Image Storage (`bliffe-media`)
+
+Image attachments (field observations and profile avatars) are stored in Amazon S3 rather than directly inside PostgreSQL, keeping the database fast and lightweight. The database records store only the permanent S3 URLs.
+
+### 1. S3 Environment Variables
+Configure these in `.env`:
+```env
+AWS_ACCESS_KEY_ID=your_aws_access_key_id
+AWS_SECRET_ACCESS_KEY=your_aws_secret_access_key
+AWS_REGION=ap-south-1
+AWS_S3_BUCKET=bliffe-media
+# Optional CDN / CloudFront prefix:
+# AWS_S3_PUBLIC_URL_PREFIX=https://media.b-liffe.org
+```
+
+### 2. Available Endpoints
+- `POST /api/media/upload`: Upload image via multipart/form-data directly to S3.
+- `POST /api/media/presigned-url`: Generate short-lived presigned PUT URL for client-side direct upload.
+- `GET /api/media/status`: Verify S3 bucket configuration and status.
+
+---
+
 ## 🧪 Testing & Code Quality
 
 ```bash
