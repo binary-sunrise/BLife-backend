@@ -21,6 +21,8 @@ class UserProfileSchema(BaseModel):
 
 
 class ProfileUpdateInputSchema(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
     fullName: str = Field(min_length=1)
     displayName: str | None = None
     bio: str | None = ""
@@ -30,12 +32,16 @@ class ProfileUpdateInputSchema(BaseModel):
 
 
 class RegisterInputSchema(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
     fullName: str = Field(min_length=2)
     email: EmailStr
     password: str = Field(min_length=6)
 
 
 class LoginInputSchema(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
     email: EmailStr
     password: str = Field(min_length=6)
 

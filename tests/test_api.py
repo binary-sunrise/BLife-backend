@@ -264,15 +264,30 @@ class TestBLiffeContractSuite:
             "individualCount": 2,
             "lifeStage": "Adult",
             "microHabitat": "Tree Canopy",
+            "habitatType": "Forest",
+            "reproductiveAttributes": ["Flower", "Breeding activity"],
+            "sex": "Female",
+            "evidenceOfPresence": ["Organism"],
+            "season": "Post monsoon",
             "hasTraditionalKnowledge": "Yes",
             "traditionalKnowledgeSource": "Elder / knowledgeable local resident",
             "latitude": 8.4982,
             "longitude": 76.9534,
             "accuracyMeters": 4.5,
             "location_source": "GPS",
+            "gpsCapturedAt": "2026-11-02T10:14:55.000Z",
             "observationAt": "2026-11-02T10:15:00.000Z",
             "recordedAt": "2026-11-02T10:15:00.000Z",
             "photos": ["https://example.com/photos/birdwing.jpg"],
+            "photoMetadata": [
+                {
+                    "id": "meta-01",
+                    "latitude": 8.4982,
+                    "longitude": 76.9534,
+                    "accuracy": 4.5,
+                    "locationSource": "GPS",
+                }
+            ],
         }
         res = await client.post("/api/observations", json=new_obs)
         assert res.status_code == 201
@@ -285,6 +300,14 @@ class TestBLiffeContractSuite:
         assert obs["basis_of_record"] == "HumanObservation"
         assert obs["individualCount"] == 2
         assert obs["tags"] == ["pollinator", "canopy-dwelling", "state-butterfly"]
+        assert obs["habitatType"] == "Forest"
+        assert obs["reproductiveAttributes"] == ["Flower", "Breeding activity"]
+        assert obs["sex"] == "Female"
+        assert obs["evidenceOfPresence"] == ["Organism"]
+        assert obs["season"] == "Post monsoon"
+        assert obs["gpsCapturedAt"] == "2026-11-02T10:14:55.000Z"
+        assert obs["photo"] == "https://example.com/photos/birdwing.jpg"
+        assert len(obs["photoMetadata"]) == 1
 
     async def test_list_observations_filter(self, client: AsyncClient) -> None:
         res = await client.get("/api/observations?tag=pollinator&search=Birdwing")
@@ -401,3 +424,9 @@ class TestBLiffeContractSuite:
         dynamic_props = json.loads(record["dwc:dynamicProperties"])
         assert isinstance(dynamic_props["tags"], list)
         assert dynamic_props["organismStatus"] == "Wild"
+        assert dynamic_props["habitatType"] == "Forest"
+        assert dynamic_props["reproductiveAttributes"] == ["Flower", "Breeding activity"]
+        assert dynamic_props["sex"] == "Female"
+        assert dynamic_props["evidenceOfPresence"] == ["Organism"]
+        assert dynamic_props["season"] == "Post monsoon"
+        assert record["dwc:habitat"] == "Forest"

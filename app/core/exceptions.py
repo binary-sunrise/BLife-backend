@@ -15,12 +15,17 @@ logger = get_logger(__name__)
 
 class AppException(Exception):
     def __init__(
-        self, message: str, status_code: int = status.HTTP_400_BAD_REQUEST, details: Any = None
+        self,
+        message: str,
+        status_code: int = status.HTTP_400_BAD_REQUEST,
+        details: Any = None,
+        code: str | None = None,
     ):
         super().__init__(message)
         self.message = message
         self.status_code = status_code
         self.details = details
+        self.code = code
 
 
 class EntityNotFoundException(AppException):
@@ -37,6 +42,8 @@ def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(AppException)
     async def app_exception_handler(_request: Request, exc: AppException) -> JSONResponse:
         content: dict[str, Any] = {"error": exc.message}
+        if exc.code is not None:
+            content["code"] = exc.code
         if exc.details is not None:
             content["details"] = exc.details
         return JSONResponse(status_code=exc.status_code, content=content)

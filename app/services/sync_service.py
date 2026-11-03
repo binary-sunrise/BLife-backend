@@ -230,7 +230,8 @@ class SyncService:
                 existing_s.surveyMethod = s.surveyMethod
                 existing_s.habitatType = s.habitatType
                 existing_s.targetGroup = s.targetGroup
-                existing_s.startTime = s.startTime
+                if s.startTime:
+                    existing_s.startTime = s.startTime
                 existing_s.endTime = s.endTime
                 existing_s.weatherNotes = s.weatherNotes or ""
                 existing_s.syncStatus = "synced"
@@ -244,7 +245,7 @@ class SyncService:
                     surveyMethod=s.surveyMethod or "Opportunistic Encounter",
                     habitatType=s.habitatType or "Urban Park / Garden",
                     targetGroup=s.targetGroup or "All Biodiversity",
-                    startTime=s.startTime,
+                    startTime=s.startTime or datetime.now(UTC).isoformat(),
                     endTime=s.endTime,
                     weatherNotes=s.weatherNotes.strip() if s.weatherNotes else "",
                     syncStatus="synced",
@@ -270,17 +271,58 @@ class SyncService:
             clean_photos = s3_service.upload_batch_base64_if_needed(raw_photos, folder="observations")
 
             existing_o = await self.session.get(BLiffeObservation, oid)
+            meta_list = [
+                m.model_dump() if hasattr(m, "model_dump") else m
+                for m in (o.photoMetadata or [])
+            ]
+            primary_photo = clean_photos[0] if clean_photos else (o.photo or "")
             if existing_o:
                 existing_o.speciesName = o.speciesName.strip()
                 existing_o.scientificName = o.scientificName.strip() if o.scientificName else ""
                 existing_o.localName = o.localName.strip() if o.localName else ""
                 existing_o.speciesGroup = o.speciesGroup.strip() if o.speciesGroup else ""
+                existing_o.speciesGroups = o.speciesGroups.strip() if o.speciesGroups else ""
+                existing_o.otherSpeciesGroup = (
+                    o.otherSpeciesGroup.strip() if o.otherSpeciesGroup else ""
+                )
+                existing_o.identificationStatus = o.identificationStatus or "Identified"
+                existing_o.organismStatus = o.organismStatus or "Wild"
+                existing_o.locationVisibility = o.locationVisibility or "Open"
+                existing_o.basis_of_record = o.basis_of_record or "HumanObservation"
                 existing_o.notes = o.notes.strip() if o.notes else ""
-                existing_o.tags = o.tags
+                existing_o.tags = o.tags or []
+                existing_o.individualCount = o.individualCount or 1
+                existing_o.lifeStage = o.lifeStage.strip() if o.lifeStage else ""
+                existing_o.microHabitat = o.microHabitat.strip() if o.microHabitat else ""
+                existing_o.otherMicroHabitat = (
+                    o.otherMicroHabitat.strip() if o.otherMicroHabitat else ""
+                )
+                existing_o.habitatType = o.habitatType.strip() if o.habitatType else ""
+                existing_o.reproductiveAttributes = o.reproductiveAttributes or []
+                existing_o.sex = o.sex.strip() if o.sex else ""
+                existing_o.evidenceOfPresence = o.evidenceOfPresence or []
+                existing_o.season = o.season.strip() if o.season else ""
+                existing_o.hasTraditionalKnowledge = o.hasTraditionalKnowledge or "No"
+                existing_o.traditionalKnowledgeSource = (
+                    o.traditionalKnowledgeSource.strip() if o.traditionalKnowledgeSource else ""
+                )
+                existing_o.otherTraditionalKnowledgeSource = (
+                    o.otherTraditionalKnowledgeSource.strip()
+                    if o.otherTraditionalKnowledgeSource
+                    else ""
+                )
+                existing_o.gps_latitude = o.gps_latitude
+                existing_o.gps_longitude = o.gps_longitude
                 existing_o.latitude = o.latitude
                 existing_o.longitude = o.longitude
+                existing_o.location_source = o.location_source or "GPS"
+                existing_o.accuracyMeters = o.accuracyMeters
+                existing_o.gpsCapturedAt = o.gpsCapturedAt
                 if clean_photos:
                     existing_o.photos = clean_photos
+                    existing_o.photo = clean_photos[0]
+                if meta_list:
+                    existing_o.photoMetadata = meta_list
                 existing_o.syncStatus = "synced"
             else:
                 now_iso = datetime.now(UTC).isoformat()
@@ -307,6 +349,11 @@ class SyncService:
                     lifeStage=o.lifeStage.strip() if o.lifeStage else "",
                     microHabitat=o.microHabitat.strip() if o.microHabitat else "",
                     otherMicroHabitat=o.otherMicroHabitat.strip() if o.otherMicroHabitat else "",
+                    habitatType=o.habitatType.strip() if o.habitatType else "",
+                    reproductiveAttributes=o.reproductiveAttributes or [],
+                    sex=o.sex.strip() if o.sex else "",
+                    evidenceOfPresence=o.evidenceOfPresence or [],
+                    season=o.season.strip() if o.season else "",
                     hasTraditionalKnowledge=o.hasTraditionalKnowledge or "No",
                     traditionalKnowledgeSource=o.traditionalKnowledgeSource.strip()
                     if o.traditionalKnowledgeSource
@@ -320,9 +367,12 @@ class SyncService:
                     longitude=o.longitude,
                     location_source=o.location_source or "GPS",
                     accuracyMeters=o.accuracyMeters,
+                    gpsCapturedAt=o.gpsCapturedAt,
                     observationAt=o.observationAt or now_iso,
                     recordedAt=o.recordedAt or now_iso,
+                    photo=primary_photo,
                     photos=clean_photos,
+                    photoMetadata=meta_list,
                     verificationStatus=o.verificationStatus or "Unreviewed",
                     verifiedBy=o.verifiedBy.strip() if o.verifiedBy else "",
                     verificationNotes=o.verificationNotes.strip() if o.verificationNotes else "",

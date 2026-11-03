@@ -30,6 +30,7 @@ class SyncStatus(StrEnum):
 
 class LocationSource(StrEnum):
     GPS = "GPS"
+    EXIF = "EXIF"
     MANUAL = "Manual Pin Adjustment"
 
 

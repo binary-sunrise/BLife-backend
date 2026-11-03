@@ -23,6 +23,8 @@ class ObservationRepository(BaseRepository[BLiffeObservation]):
         organism_status: str | None = None,
         tag: str | None = None,
         search: str | None = None,
+        habitat_type: str | None = None,
+        season: str | None = None,
         limit: int = 100,
         offset: int = 0,
     ) -> list[BLiffeObservation]:
@@ -48,6 +50,12 @@ class ObservationRepository(BaseRepository[BLiffeObservation]):
 
         if organism_status and organism_status != "All":
             query = query.where(BLiffeObservation.organismStatus == organism_status)
+
+        if habitat_type:
+            query = query.where(BLiffeObservation.habitatType == habitat_type)
+
+        if season:
+            query = query.where(BLiffeObservation.season == season)
 
         if tag:
             query = query.where(any_(BLiffeObservation.tags) == tag)

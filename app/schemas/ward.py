@@ -22,6 +22,8 @@ class WardSchema(BaseModel):
 
 
 class CreateWardSchema(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
     id: str | None = None
     projectId: str = Field(min_length=1)
     wardNumber: str = Field(min_length=1)
@@ -34,6 +36,8 @@ class CreateWardSchema(BaseModel):
 
 
 class UpdateWardSchema(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
     wardNumber: str | None = None
     wardName: str | None = None
     localBodyName: str | None = None

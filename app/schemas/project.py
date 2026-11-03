@@ -26,6 +26,8 @@ class ProjectSchema(BaseModel):
 
 
 class CreateProjectSchema(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
     id: str | None = None
     name: str = Field(min_length=1)
     description: str | None = ""
@@ -37,6 +39,8 @@ class CreateProjectSchema(BaseModel):
 
 
 class UpdateProjectSchema(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
     name: str | None = None
     description: str | None = None
     startDate: str | None = None

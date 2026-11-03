@@ -94,7 +94,7 @@ class S3StorageService:
         filename: str,
         content_type: str | None = None,
         folder: str = "observations",
-    ) -> dict[str, str]:
+    ) -> dict[str, Any]:
         """Uploads a file to Amazon S3 bucket (bliffe-media) and returns the public URL and key."""
         clean_name = self._sanitize_filename(filename)
         resolved_content_type = content_type or mimetypes.guess_type(clean_name)[0] or "image/jpeg"

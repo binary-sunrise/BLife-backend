@@ -22,6 +22,8 @@ router = APIRouter(tags=["Observations"])
 
 
 def map_observation(obs: BLiffeObservation) -> dict[str, Any]:
+    raw_photos = obs.photos or []
+    primary_photo = obs.photo or (raw_photos[0] if raw_photos else None)
     return {
         "id": obs.id,
         "surveyId": obs.surveyId,
@@ -45,6 +47,11 @@ def map_observation(obs: BLiffeObservation) -> dict[str, Any]:
         "lifeStage": obs.lifeStage or "",
         "microHabitat": obs.microHabitat or "",
         "otherMicroHabitat": obs.otherMicroHabitat or "",
+        "habitatType": obs.habitatType or "",
+        "reproductiveAttributes": obs.reproductiveAttributes or [],
+        "sex": obs.sex or "",
+        "evidenceOfPresence": obs.evidenceOfPresence or [],
+        "season": obs.season or "",
         "hasTraditionalKnowledge": obs.hasTraditionalKnowledge or "No",
         "traditionalKnowledgeSource": obs.traditionalKnowledgeSource or "",
         "otherTraditionalKnowledgeSource": obs.otherTraditionalKnowledgeSource or "",
@@ -54,9 +61,12 @@ def map_observation(obs: BLiffeObservation) -> dict[str, Any]:
         "longitude": obs.longitude,
         "location_source": obs.location_source or "GPS",
         "accuracyMeters": obs.accuracyMeters,
+        "gpsCapturedAt": obs.gpsCapturedAt,
         "observationAt": obs.observationAt,
         "recordedAt": obs.recordedAt,
-        "photos": obs.photos or [],
+        "photo": primary_photo,
+        "photos": raw_photos,
+        "photoMetadata": obs.photoMetadata or [],
         "verificationStatus": obs.verificationStatus or "Unreviewed",
         "verifiedBy": obs.verifiedBy or "",
         "verificationNotes": obs.verificationNotes or "",
@@ -80,6 +90,8 @@ async def list_observations(
     tag: str | None = None,
     search: str | None = None,
     q: str | None = None,
+    habitatType: str | None = None,
+    season: str | None = None,
     limit: int = Query(default=100, le=200),
     offset: int = 0,
 ) -> list[dict[str, Any]]:
@@ -94,6 +106,8 @@ async def list_observations(
         organism_status=organismStatus,
         tag=tag,
         search=search_term,
+        habitat_type=habitatType,
+        season=season,
         limit=limit,
         offset=offset,
     )
@@ -130,6 +144,10 @@ async def create_observation(
     photos = s3_service.upload_batch_base64_if_needed(raw_photos, folder="observations")
     project_ids = input_data.projectIds or ([rels["projectId"]] if rels["projectId"] else [])
     now_iso = datetime.now(UTC).isoformat()
+    meta_list = [
+        m.model_dump() if hasattr(m, "model_dump") else m for m in (input_data.photoMetadata or [])
+    ]
+    primary_photo = photos[0] if photos else (input_data.photo or "")
 
     obs = BLiffeObservation(
         id=obs_id,
@@ -158,6 +176,11 @@ async def create_observation(
         otherMicroHabitat=input_data.otherMicroHabitat.strip()
         if input_data.otherMicroHabitat
         else "",
+        habitatType=input_data.habitatType.strip() if input_data.habitatType else "",
+        reproductiveAttributes=input_data.reproductiveAttributes or [],
+        sex=input_data.sex.strip() if input_data.sex else "",
+        evidenceOfPresence=input_data.evidenceOfPresence or [],
+        season=input_data.season.strip() if input_data.season else "",
         hasTraditionalKnowledge=input_data.hasTraditionalKnowledge or "No",
         traditionalKnowledgeSource=input_data.traditionalKnowledgeSource.strip()
         if input_data.traditionalKnowledgeSource
@@ -171,9 +194,12 @@ async def create_observation(
         longitude=input_data.longitude,
         location_source=input_data.location_source or "GPS",
         accuracyMeters=input_data.accuracyMeters,
+        gpsCapturedAt=input_data.gpsCapturedAt,
         observationAt=input_data.observationAt or now_iso,
         recordedAt=input_data.recordedAt or now_iso,
+        photo=primary_photo,
         photos=photos,
+        photoMetadata=meta_list,
         verificationStatus=input_data.verificationStatus or "Unreviewed",
         verifiedBy=input_data.verifiedBy.strip() if input_data.verifiedBy else "",
         verificationNotes=input_data.verificationNotes.strip()
@@ -239,6 +265,16 @@ async def update_observation(
         obs.microHabitat = input_data.microHabitat.strip()
     if input_data.otherMicroHabitat is not None:
         obs.otherMicroHabitat = input_data.otherMicroHabitat.strip()
+    if input_data.habitatType is not None:
+        obs.habitatType = input_data.habitatType.strip()
+    if input_data.reproductiveAttributes is not None:
+        obs.reproductiveAttributes = input_data.reproductiveAttributes
+    if input_data.sex is not None:
+        obs.sex = input_data.sex.strip()
+    if input_data.evidenceOfPresence is not None:
+        obs.evidenceOfPresence = input_data.evidenceOfPresence
+    if input_data.season is not None:
+        obs.season = input_data.season.strip()
     if input_data.hasTraditionalKnowledge is not None:
         obs.hasTraditionalKnowledge = input_data.hasTraditionalKnowledge
     if input_data.traditionalKnowledgeSource is not None:
@@ -257,16 +293,26 @@ async def update_observation(
         obs.location_source = input_data.location_source
     if input_data.accuracyMeters is not None:
         obs.accuracyMeters = input_data.accuracyMeters
+    if input_data.gpsCapturedAt is not None:
+        obs.gpsCapturedAt = input_data.gpsCapturedAt
     if input_data.photos is not None:
         s3_service = S3StorageService()
         obs.photos = s3_service.upload_batch_base64_if_needed(
             input_data.photos, folder="observations"
         )
+        if obs.photos:
+            obs.photo = obs.photos[0]
     elif input_data.photo is not None:
         s3_service = S3StorageService()
         obs.photos = s3_service.upload_batch_base64_if_needed(
             [input_data.photo], folder="observations"
         )
+        if obs.photos:
+            obs.photo = obs.photos[0]
+    if input_data.photoMetadata is not None:
+        obs.photoMetadata = [
+            m.model_dump() if hasattr(m, "model_dump") else m for m in input_data.photoMetadata
+        ]
     if input_data.verificationStatus is not None:
         obs.verificationStatus = input_data.verificationStatus
     if input_data.verifiedBy is not None:
@@ -326,17 +372,59 @@ async def batch_upsert_observations(request: Request, session: SessionDep) -> di
         clean_photos = s3_service.upload_batch_base64_if_needed(raw_photos, folder="observations")
 
         existing = await session.get(BLiffeObservation, oid)
+        meta_list = [
+            m.model_dump() if hasattr(m, "model_dump") else m for m in (parsed.photoMetadata or [])
+        ]
+        primary_photo = clean_photos[0] if clean_photos else (parsed.photo or "")
         if existing:
             existing.speciesName = parsed.speciesName.strip()
             existing.scientificName = parsed.scientificName.strip() if parsed.scientificName else ""
             existing.localName = parsed.localName.strip() if parsed.localName else ""
             existing.speciesGroup = parsed.speciesGroup.strip() if parsed.speciesGroup else ""
-            existing.notes = parsed.notes.strip() if parsed.notes else ""
+            existing.speciesGroups = parsed.speciesGroups.strip() if parsed.speciesGroups else ""
+            existing.otherSpeciesGroup = (
+                parsed.otherSpeciesGroup.strip() if parsed.otherSpeciesGroup else ""
+            )
+            existing.identificationStatus = parsed.identificationStatus or "Identified"
+            existing.organismStatus = parsed.organismStatus or "Wild"
+            existing.locationVisibility = parsed.locationVisibility or "Open"
+            existing.basis_of_record = parsed.basis_of_record or "HumanObservation"
             existing.tags = parsed.tags or []
+            existing.notes = parsed.notes.strip() if parsed.notes else ""
+            existing.individualCount = parsed.individualCount or 1
+            existing.lifeStage = parsed.lifeStage.strip() if parsed.lifeStage else ""
+            existing.microHabitat = parsed.microHabitat.strip() if parsed.microHabitat else ""
+            existing.otherMicroHabitat = (
+                parsed.otherMicroHabitat.strip() if parsed.otherMicroHabitat else ""
+            )
+            existing.habitatType = parsed.habitatType.strip() if parsed.habitatType else ""
+            existing.reproductiveAttributes = parsed.reproductiveAttributes or []
+            existing.sex = parsed.sex.strip() if parsed.sex else ""
+            existing.evidenceOfPresence = parsed.evidenceOfPresence or []
+            existing.season = parsed.season.strip() if parsed.season else ""
+            existing.hasTraditionalKnowledge = parsed.hasTraditionalKnowledge or "No"
+            existing.traditionalKnowledgeSource = (
+                parsed.traditionalKnowledgeSource.strip()
+                if parsed.traditionalKnowledgeSource
+                else ""
+            )
+            existing.otherTraditionalKnowledgeSource = (
+                parsed.otherTraditionalKnowledgeSource.strip()
+                if parsed.otherTraditionalKnowledgeSource
+                else ""
+            )
+            existing.gps_latitude = parsed.gps_latitude
+            existing.gps_longitude = parsed.gps_longitude
             existing.latitude = parsed.latitude
             existing.longitude = parsed.longitude
+            existing.location_source = parsed.location_source or "GPS"
+            existing.accuracyMeters = parsed.accuracyMeters
+            existing.gpsCapturedAt = parsed.gpsCapturedAt
             if clean_photos:
                 existing.photos = clean_photos
+                existing.photo = clean_photos[0]
+            if meta_list:
+                existing.photoMetadata = meta_list
             existing.syncStatus = "synced"
         else:
             now_iso = datetime.now(UTC).isoformat()
@@ -367,6 +455,11 @@ async def batch_upsert_observations(request: Request, session: SessionDep) -> di
                 otherMicroHabitat=parsed.otherMicroHabitat.strip()
                 if parsed.otherMicroHabitat
                 else "",
+                habitatType=parsed.habitatType.strip() if parsed.habitatType else "",
+                reproductiveAttributes=parsed.reproductiveAttributes or [],
+                sex=parsed.sex.strip() if parsed.sex else "",
+                evidenceOfPresence=parsed.evidenceOfPresence or [],
+                season=parsed.season.strip() if parsed.season else "",
                 hasTraditionalKnowledge=parsed.hasTraditionalKnowledge or "No",
                 traditionalKnowledgeSource=parsed.traditionalKnowledgeSource.strip()
                 if parsed.traditionalKnowledgeSource
@@ -380,9 +473,12 @@ async def batch_upsert_observations(request: Request, session: SessionDep) -> di
                 longitude=parsed.longitude,
                 location_source=parsed.location_source or "GPS",
                 accuracyMeters=parsed.accuracyMeters,
+                gpsCapturedAt=parsed.gpsCapturedAt,
                 observationAt=parsed.observationAt or now_iso,
                 recordedAt=parsed.recordedAt or now_iso,
+                photo=primary_photo,
                 photos=clean_photos,
+                photoMetadata=meta_list,
                 verificationStatus=parsed.verificationStatus or "Unreviewed",
                 verifiedBy=parsed.verifiedBy.strip() if parsed.verifiedBy else "",
                 verificationNotes=parsed.verificationNotes.strip()
