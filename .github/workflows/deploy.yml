@@ -1,0 +1,42 @@
+name: Deploy Backend to AWS Elastic Beanstalk
+
+on:
+  push:
+    branches:
+      - main
+      - refactor_BE
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Build & Deploy to Elastic Beanstalk
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Generate Deployment ZIP Package
+        run: |
+          zip -r deploy.zip . \
+            -x "*.git*" \
+            -x ".venv/*" \
+            -x "__pycache__/*" \
+            -x "*/__pycache__/*" \
+            -x "tests/*" \
+            -x ".pytest_cache/*" \
+            -x ".ruff_cache/*" \
+            -x ".mypy_cache/*"
+
+      - name: Deploy to Elastic Beanstalk
+        uses: einaregilsson/beanstalk-deploy@v22
+        with:
+          aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          region: ${{ secrets.AWS_REGION }}
+          application_name: bliffe-backend
+          environment_name: bliffe-backend-prod
+          version_label: "backend-${{ github.sha }}-${{ github.run_number }}"
+          deployment_package: deploy.zip
+          use_existing_version_if_available: true
+          wait_for_deployment: true
