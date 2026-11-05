@@ -1,176 +1,67 @@
-# B-Liffe Backend Service (FastAPI)
+# 🌿 B-Liffe Backend (FastAPI API Service)
 
-Production-ready, high-performance async backend service for the **B-Liffe Biodiversity Field Data Collection Application**.
+High-performance asynchronous REST API powering the B-Liffe (Vasudha) biodiversity survey and ecological monitoring application. Built with **FastAPI**, **SQLAlchemy 2.0 (Asyncpg)**, and **AWS Elastic Beanstalk (Docker)**.
 
-Built with **FastAPI**, **SQLAlchemy 2.0 Async**, **PostgreSQL** (`asyncpg`), **Alembic**, and **Redis** background workers.
-
----
-
-## 🚀 Quick EC2 Deployment & Container Startup
-
-Your live EC2 server is at **`54.252.66.130`** (using key `d:\Veena\KFRI\B-Liffe_Backend\certs\bliffe-key.pem`).
-
-### 1. Connect to EC2 from Windows PowerShell
-Run this command from any directory (uses the full path so it always finds the key):
-```powershell
-ssh -i "d:\Veena\KFRI\B-Liffe_Backend\certs\bliffe-key.pem" ubuntu@54.252.66.130
-```
-*(Or navigate to the project root first with `cd d:\Veena\KFRI\B-Liffe_Backend` and run `ssh -i "certs\bliffe-key.pem" ubuntu@54.252.66.130`).*
-
-### 2. One-Line Container Startup (inside EC2)
-Inside your EC2 terminal, run:
-```bash
-cd ~/B-Liffe_Backend && git checkout refactor_BE && git pull origin refactor_BE && docker compose up -d --build
-```
-
-### 3. Check Status & Logs
-```bash
-# Verify containers are running
-docker compose ps
-
-# View live API logs
-docker compose logs -f api
-```
-
-### 4. Restart or Stop Containers
-```bash
-# Restart backend
-docker compose restart api
-
-# Stop all containers
-docker compose down
-```
+[![AWS Elastic Beanstalk](https://img.shields.io/badge/AWS-Elastic_Beanstalk-FF9900?style=for-the-badge&logo=amazon-aws&logoColor=white)](#-live-api-endpoints)
+[![FastAPI](https://img.shields.io/badge/FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-AWS_RDS-336791?style=flat-square&logo=postgresql&logoColor=white)](https://aws.amazon.com/rds/postgresql/)
+[![Docker](https://img.shields.io/badge/Docker-Amazon_Linux_2023-2496ED?style=flat-square&logo=docker&logoColor=white)](https://www.docker.com/)
+[![Python 3.12](https://img.shields.io/badge/Python-3.12-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
 
 ---
 
-## ⚡ Local Docker Setup
+## 🌐 Live API Endpoints
 
-### 1. Configure `.env`
-Copy the example configuration:
-```bash
-cp .env.example .env
-```
-
-Ensure your `.env` contains:
-```env
-ENVIRONMENT=production
-PORT=3000
-HOST=0.0.0.0
-
-# Allowed frontend domains for CORS
-ALLOWED_ORIGINS=https://veenaav.github.io,http://localhost:5173
-
-# Database (AWS RDS PostgreSQL)
-DATABASE_URL="postgresql+asyncpg://postgres:BliffeP0stgres2026Secure!@bliffe-db.cxags06gwym1.ap-southeast-2.rds.amazonaws.com:5432/bliffe_db"
-DATABASE_SSL=true
-DATABASE_SSL_REJECT_UNAUTHORIZED=false
-RDS_CA_BUNDLE_PATH=certs/global-bundle.pem
-
-# Auth secret (minimum 32 characters)
-BETTER_AUTH_SECRET="lookaround_auth_secret_development_min_32_chars_ok!"
-```
-
-### 2. Download AWS RDS Certificate Bundle
-```bash
-mkdir -p certs
-curl -o certs/global-bundle.pem https://truststore.pki.rds.amazonaws.com/global/global-bundle.pem
-```
-
-### 3. Start Containers
-```bash
-docker compose up -d --build
-```
+* 🚀 **API Base URL:** `http://bliffe-api.ap-southeast-2.elasticbeanstalk.com`
+* 📖 **Interactive Swagger UI (OpenAPI Docs):** `http://bliffe-api.ap-southeast-2.elasticbeanstalk.com/docs`
+* 🩺 **Health Check:** `http://bliffe-api.ap-southeast-2.elasticbeanstalk.com/health`
 
 ---
 
-## 🐍 Local Python Setup (Without Docker)
+## 🏗️ Architecture & Features
 
-For local development and testing with hot-reload.
+* **Framework**: FastAPI (Python 3.12) running under Gunicorn with Uvicorn worker pool.
+* **Database**: AWS RDS PostgreSQL with asyncpg connection pooling & SSL certificate verification.
+* **Storage**: Amazon S3 (`bliffe-media`) for observation photos and survey attachments.
+* **Reverse Proxy**: Built-in Nginx via `.platform/nginx/conf.d/custom.conf` routing port 80 to container port 3000.
+* **Continuous Deployment**: Automated GitHub Actions workflow using AWS CLI deploying to AWS Elastic Beanstalk on push.
 
-### 1. Install Dependencies
-Ensure [`uv`](https://docs.astral.sh/uv/) is installed, then run:
+---
+
+## 🚀 Local Development
+
+### Prerequisites
+* [Python 3.12+](https://www.python.org/)
+* [uv](https://docs.astral.sh/uv/) package manager
+* Running PostgreSQL instance
+
+### Quick Start
+
 ```bash
+# 1. Clone repository
+git clone https://github.com/binary-sunrise/lookaround_backend.git
+cd lookaround_backend
+
+# 2. Sync dependencies
 uv sync
-```
 
-### 2. Run Database Migrations
-```bash
+# 3. Configure local environment
+cp .env.example .env
+# Update DATABASE_URL and secrets in .env
+
+# 4. Run database migrations
 uv run alembic upgrade head
-```
 
-### 3. Start Development Server
-```bash
+# 5. Start dev server
 uv run uvicorn app.main:app --host 0.0.0.0 --port 3000 --reload
 ```
 
 ---
 
-## 🌐 Verifying the Backend
+## ☁️ Deployment (CI/CD)
 
-- **Health Check**: [https://bliffe-api.duckdns.org/health](https://bliffe-api.duckdns.org/health) (EC2) or [http://localhost:3000/health](http://localhost:3000/health) (Local)
-- **Interactive Swagger Docs**: [https://bliffe-api.duckdns.org/docs](https://bliffe-api.duckdns.org/docs) or [http://localhost:3000/docs](http://localhost:3000/docs)
-- **ReDoc**: [http://localhost:3000/redoc](http://localhost:3000/redoc)
-
-```powershell
-# Windows PowerShell quick test
-curl.exe -i https://bliffe-api.duckdns.org/health
-```
-
----
-
-## 🪣 Amazon S3 Image Storage (`bliffe-media`)
-
-Image attachments (field observations and profile avatars) are stored in Amazon S3 rather than directly inside PostgreSQL, keeping the database fast and lightweight. The database records store only the permanent S3 URLs.
-
-### 1. S3 Environment Variables
-Configure these in `.env`:
-```env
-AWS_ACCESS_KEY_ID=your_aws_access_key_id
-AWS_SECRET_ACCESS_KEY=your_aws_secret_access_key
-AWS_REGION=ap-south-1
-AWS_S3_BUCKET=bliffe-media
-# Optional CDN / CloudFront prefix:
-# AWS_S3_PUBLIC_URL_PREFIX=https://media.b-liffe.org
-```
-
-### 2. Available Endpoints
-- `POST /api/media/upload`: Upload image via multipart/form-data directly to S3.
-- `POST /api/media/presigned-url`: Generate short-lived presigned PUT URL for client-side direct upload.
-- `GET /api/media/status`: Verify S3 bucket configuration and status.
-
----
-
-## 🧪 Testing & Code Quality
-
-```bash
-# Run full pytest test suite
-uv run pytest
-
-# Check DB connection
-uv run python scripts/check_db.py
-
-# Format and lint code
-uv run ruff format .
-uv run ruff check .
-
-# Static type check
-uv run mypy app
-```
-
----
-
-## 🔒 Free HTTPS / Caddy Reference (EC2)
-
-Caddy automatically provisions free Let's Encrypt SSL certificates.
-
-`/etc/caddy/Caddyfile`:
-```caddyfile
-bliffe-api.duckdns.org {
-    reverse_proxy localhost:3000
-}
-```
-
-Reload Caddy config:
-```bash
-sudo systemctl reload caddy
-```
+Deployments are automated through GitHub Actions (`.github/workflows/deploy.yml`):
+1. Runs on push to `main` and `refactor_BE` branches.
+2. Authenticates using GitHub repository secrets: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`.
+3. Creates a clean deployment package excluding caches, tests, and `.venv`.
+4. Uploads package to Elastic Beanstalk S3 storage and updates environment `bliffe-backend-prod`.
