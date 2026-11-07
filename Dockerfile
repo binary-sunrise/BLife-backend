@@ -43,5 +43,5 @@ EXPOSE 3000
 HEALTHCHECK --interval=15s --timeout=5s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:3000/health || exit 1
 
-# Start production server with Gunicorn running Uvicorn workers
-CMD ["gunicorn", "-k", "uvicorn.workers.UvicornWorker", "-w", "4", "-b", "0.0.0.0:3000", "app.main:app"]
+# Start production server with Gunicorn running Uvicorn workers (tuned for micro EC2 1GB RAM)
+CMD ["gunicorn", "-k", "uvicorn.workers.UvicornWorker", "-w", "2", "-b", "0.0.0.0:3000", "app.main:app"]
