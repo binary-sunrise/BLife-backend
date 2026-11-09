@@ -12,9 +12,10 @@ High-performance asynchronous REST API powering the B-Liffe (Vasudha) biodiversi
 
 ## 🌐 Live API Endpoints
 
-* 🚀 **API Base URL:** `http://bliffe-api.ap-southeast-2.elasticbeanstalk.com`
-* 📖 **Interactive Swagger UI (OpenAPI Docs):** `http://bliffe-api.ap-southeast-2.elasticbeanstalk.com/docs`
-* 🩺 **Health Check:** `http://bliffe-api.ap-southeast-2.elasticbeanstalk.com/health`
+* 🚀 **API Base URL:** `http://blife-api-prod-042396229463.ap-southeast-2.elasticbeanstalk.com`
+* 🛡️ **Unified CloudFront Proxy:** `https://d3lallddukllru.cloudfront.net/api`
+* 📖 **Interactive Swagger UI (OpenAPI Docs):** `http://blife-api-prod-042396229463.ap-southeast-2.elasticbeanstalk.com/docs` (or via CDN: `https://d3lallddukllru.cloudfront.net/docs`)
+* 🩺 **Health Check:** `http://blife-api-prod-042396229463.ap-southeast-2.elasticbeanstalk.com/health` (or via CDN: `https://d3lallddukllru.cloudfront.net/health`)
 
 ---
 
@@ -22,9 +23,8 @@ High-performance asynchronous REST API powering the B-Liffe (Vasudha) biodiversi
 
 * **Framework**: FastAPI (Python 3.12) running under Gunicorn with Uvicorn worker pool.
 * **Database**: AWS RDS PostgreSQL with asyncpg connection pooling & SSL certificate verification.
-* **Storage**: Amazon S3 (`bliffe-media`) for observation photos and survey attachments.
+* **Storage**: Amazon S3 (`blife-media-prod-042396229463`) for observation photos and survey attachments.
 * **Reverse Proxy**: Built-in Nginx via `.platform/nginx/conf.d/custom.conf` routing port 80 to container port 3000.
-* **Continuous Deployment**: Automated GitHub Actions workflow using AWS CLI deploying to AWS Elastic Beanstalk on push.
 
 ---
 
@@ -55,40 +55,3 @@ uv run alembic upgrade head
 # 5. Start dev server
 uv run uvicorn app.main:app --host 0.0.0.0 --port 3000 --reload
 ```
-
----
-
-## ☁️ AWS CloudFormation Infrastructure & Deployment
-
-All core AWS infrastructure (Elastic Beanstalk, S3 Media Bucket, RDS PostgreSQL, CloudFront CDN, and IAM roles) is centrally managed in the [`BLife-deploy`](../BLife-deploy) repository.
-
-Refer to [`BLife-deploy/README.md`](../BLife-deploy/README.md) for complete stack provisioning commands, parameter templates, and configuration options.
-
-### Quick Stack Reference
-
-To provision or update the backend environment using the centralized template:
-
-```bash
-aws cloudformation create-stack \
-  --stack-name bliffe-backend-prod \
-  --template-body file://../BLife-deploy/cloudformation.yaml \
-  --capabilities CAPABILITY_NAMED_IAM \
-  --parameters \
-      ParameterKey=ApplicationName,ParameterValue=bliffe-backend \
-      ParameterKey=EnvironmentName,ParameterValue=bliffe-backend-prod \
-      ParameterKey=InstanceType,ParameterValue=t3.micro \
-      ParameterKey=DatabaseUrl,ParameterValue="postgresql+asyncpg://postgres:YourPassword@your-rds-endpoint.ap-southeast-2.rds.amazonaws.com:5432/bliffe_db" \
-      ParameterKey=BetterAuthSecret,ParameterValue="your_32_character_secret_key_here!" \
-      ParameterKey=FrontendUrl,ParameterValue="https://d2msowv3rhnqjt.cloudfront.net" \
-  --region ap-southeast-2
-```
-
----
-
-## 🔄 Continuous Deployment (CI/CD)
-
-Deployments are automated through GitHub Actions (`.github/workflows/deploy.yml`):
-1. Runs on push to `main` and `refactor_BE` branches.
-2. Authenticates using GitHub repository secrets: `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`.
-3. Creates a clean deployment package excluding caches, tests, and `.venv`.
-4. Uploads package to Elastic Beanstalk S3 storage and updates environment `bliffe-backend-prod`.
