@@ -46,18 +46,18 @@ jobs:
 
           echo "Creating Application Version ${VERSION_LABEL}..."
           aws elasticbeanstalk create-application-version \
-            --application-name bliffe-backend \
+            --application-name blife-backend \
             --version-label "${VERSION_LABEL}" \
             --source-bundle S3Bucket="${S3_BUCKET}",S3Key="${S3_KEY}" \
             --auto-create-application
 
-          echo "Updating Environment bliffe-backend-prod..."
+          echo "Updating Environment blife-backend-prod..."
           aws elasticbeanstalk update-environment \
-            --environment-name bliffe-backend-prod \
+            --environment-name blife-backend-prod \
             --version-label "${VERSION_LABEL}"
 
           echo "Waiting for environment update to complete..."
           aws elasticbeanstalk wait environment-updated \
-            --environment-name bliffe-backend-prod
+            --environment-name blife-backend-prod
 
           echo "Deployment successfully completed!"

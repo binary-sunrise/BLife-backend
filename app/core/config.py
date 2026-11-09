@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from functools import lru_cache
 
-from pydantic import Field
+from pydantic import AliasChoices, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -17,7 +17,10 @@ class Settings(BaseSettings):
     APP_NAME: str = "B-Liffe Biodiversity Field Data API"
     SERVICE_NAME: str = "b-liffe-backend"
     APP_VERSION: str = "2.0.0"
-    ENVIRONMENT: str = Field(default="development", validation_alias="NODE_ENV")
+    ENVIRONMENT: str = Field(
+        default="development",
+        validation_alias=AliasChoices("ENVIRONMENT", "NODE_ENV"),
+    )
     PORT: int = 3000
     HOST: str = "0.0.0.0"
     BODY_LIMIT: str = "50mb"
@@ -57,7 +60,7 @@ class Settings(BaseSettings):
     # Amazon S3 / Object Storage (Free Tier)
     AWS_ACCESS_KEY_ID: str | None = None
     AWS_SECRET_ACCESS_KEY: str | None = None
-    AWS_REGION: str = "ap-south-1"
+    AWS_REGION: str = "ap-southeast-2"
     AWS_S3_BUCKET: str = "bliffe-media"
     AWS_S3_ENDPOINT_URL: str | None = None
     AWS_S3_PUBLIC_URL_PREFIX: str | None = None

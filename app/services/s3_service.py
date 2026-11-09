@@ -51,30 +51,35 @@ class S3StorageService:
 
     @property
     def is_configured(self) -> bool:
-        """Checks if AWS S3 credentials are configured in environment variables."""
-        return bool(
-            self.settings.AWS_ACCESS_KEY_ID
-            and self.settings.AWS_SECRET_ACCESS_KEY
-            and self.settings.AWS_S3_BUCKET
-        )
+        """Checks if AWS S3 storage is configured.
+        Supports both ambient IAM role credentials and explicit access keys."""
+        if not self.settings.AWS_S3_BUCKET:
+            return False
+        # If explicit keys are configured as strings, verify they are non-empty
+        if self.settings.AWS_ACCESS_KEY_ID is not None and self.settings.AWS_SECRET_ACCESS_KEY is not None:
+            return bool(self.settings.AWS_ACCESS_KEY_ID.strip() and self.settings.AWS_SECRET_ACCESS_KEY.strip())
+        return True
 
     @property
     def client(self) -> Any:
         if self._client is None:
             if not self.is_configured:
                 raise S3StorageException(
-                    "AWS S3 is not configured. Please set AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, "
-                    "and AWS_S3_BUCKET in your environment variables.",
+                    "AWS S3 is not configured. Please set AWS_S3_BUCKET in your environment variables.",
                     status_code=503,
                 )
 
             client_kwargs: dict[str, Any] = {
                 "service_name": "s3",
-                "aws_access_key_id": self.settings.AWS_ACCESS_KEY_ID,
-                "aws_secret_access_key": self.settings.AWS_SECRET_ACCESS_KEY,
                 "region_name": self.settings.AWS_REGION,
                 "config": Config(signature_version="s3v4"),
             }
+            # Use explicit credentials when provided (e.g. local dev);
+            # otherwise boto3 automatically adopts ambient EC2 IAM Instance Profile credentials.
+            if self.settings.AWS_ACCESS_KEY_ID and self.settings.AWS_SECRET_ACCESS_KEY:
+                client_kwargs["aws_access_key_id"] = self.settings.AWS_ACCESS_KEY_ID
+                client_kwargs["aws_secret_access_key"] = self.settings.AWS_SECRET_ACCESS_KEY
+
             if self.settings.AWS_S3_ENDPOINT_URL:
                 client_kwargs["endpoint_url"] = self.settings.AWS_S3_ENDPOINT_URL
 

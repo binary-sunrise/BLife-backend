@@ -58,7 +58,34 @@ uv run uvicorn app.main:app --host 0.0.0.0 --port 3000 --reload
 
 ---
 
-## ☁️ Deployment (CI/CD)
+## ☁️ AWS CloudFormation Infrastructure & Deployment
+
+All core AWS infrastructure (Elastic Beanstalk, S3 Media Bucket, RDS PostgreSQL, CloudFront CDN, and IAM roles) is centrally managed in the [`BLife-deploy`](../BLife-deploy) repository.
+
+Refer to [`BLife-deploy/README.md`](../BLife-deploy/README.md) for complete stack provisioning commands, parameter templates, and configuration options.
+
+### Quick Stack Reference
+
+To provision or update the backend environment using the centralized template:
+
+```bash
+aws cloudformation create-stack \
+  --stack-name bliffe-backend-prod \
+  --template-body file://../BLife-deploy/cloudformation.yaml \
+  --capabilities CAPABILITY_NAMED_IAM \
+  --parameters \
+      ParameterKey=ApplicationName,ParameterValue=bliffe-backend \
+      ParameterKey=EnvironmentName,ParameterValue=bliffe-backend-prod \
+      ParameterKey=InstanceType,ParameterValue=t3.micro \
+      ParameterKey=DatabaseUrl,ParameterValue="postgresql+asyncpg://postgres:YourPassword@your-rds-endpoint.ap-southeast-2.rds.amazonaws.com:5432/bliffe_db" \
+      ParameterKey=BetterAuthSecret,ParameterValue="your_32_character_secret_key_here!" \
+      ParameterKey=FrontendUrl,ParameterValue="https://d2msowv3rhnqjt.cloudfront.net" \
+  --region ap-southeast-2
+```
+
+---
+
+## 🔄 Continuous Deployment (CI/CD)
 
 Deployments are automated through GitHub Actions (`.github/workflows/deploy.yml`):
 1. Runs on push to `main` and `refactor_BE` branches.
