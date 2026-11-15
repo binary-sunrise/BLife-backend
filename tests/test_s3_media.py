@@ -5,7 +5,7 @@ from unittest.mock import MagicMock
 import pytest
 from httpx import AsyncClient
 
-from app.core.config import Settings
+from app.core.config import Settings, get_settings
 from app.services.s3_service import S3StorageService
 
 
@@ -15,7 +15,7 @@ async def test_media_status_endpoint(client: AsyncClient) -> None:
     assert res.status_code == 200
     data = res.json()
     assert "configured" in data
-    assert data["bucket"] == "bliffe-media"
+    assert data["bucket"] == get_settings().AWS_S3_BUCKET
     assert "region" in data
     assert "baseUrl" in data
 
